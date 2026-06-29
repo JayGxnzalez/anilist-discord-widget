@@ -31,7 +31,7 @@ async function fetchAniListData() {
           entries {
             progress
             media {
-              title { userPreferred }
+              title { userPreferred english }
             }
           }
         }
@@ -66,9 +66,9 @@ async function updateWidget() {
   const entries = lists.flatMap(l => l.entries);
   if (entries.length > 0) {
     const latest = entries[0];
-    const title = latest.media.title.userPreferred;
+    const title = latest.media.title.english || latest.media.title.userPreferred;
     const ep = latest.progress;
-    activityText = `Watching ep ${ep} of ${title}`;
+    activityText = `Watched ep ${ep} of ${title}`;
   }
 
   const body = {

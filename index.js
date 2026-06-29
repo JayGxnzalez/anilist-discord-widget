@@ -2,13 +2,14 @@ const fetch = require("node-fetch");
 
 const DISCORD_APP_ID = "1520971934274158714";
 const DISCORD_USER_ID = "520279853199523840";
-const ANILIST_USERNAME = "JayGxnzalez";
+const ANILIST_USERNAME = process.env.ANILIST_USERNAME || "JayGxnzalez";
 const BOT_TOKEN = process.env.BOT_TOKEN;
 
 async function fetchAniListData() {
   const query = `
     query ($name: String) {
       User(name: $name) {
+        name
         avatar { large }
         createdAt
         statistics {
@@ -49,17 +50,18 @@ async function updateWidget() {
   });
 
   const body = {
-    username: ANILIST_USERNAME,
+    username: user.name,
     data: {
       dynamic: [
         { type: 3, name: "avatar", value: { url: user.avatar.large } },
-        { type: 1, name: "username", value: ANILIST_USERNAME },
+        { type: 1, name: "username", value: user.name },
         { type: 1, name: "total_anime", value: String(stats.count) },
         { type: 1, name: "days_watched", value: String(daysWatched) },
         { type: 1, name: "mean_score", value: String(stats.meanScore) },
         { type: 1, name: "episodes_watched", value: String(stats.episodesWatched) },
         { type: 1, name: "currently_watching", value: String(watching) },
         { type: 1, name: "joined", value: joined },
+        { type: 1, name: "mini_stat", value: `Watched Anime: ${stats.count}` },
       ]
     }
   };

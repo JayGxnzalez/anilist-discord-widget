@@ -26,18 +26,12 @@ async function fetchAniListData() {
           }
         }
       }
-    }
-  `;
-
-  const activityQuery = `
-    query ($name: String) {
-      activities(userName: $name, sort: ID_DESC, perPage: 1) {
-        ... on ListActivity {
-          status
-          progress
-          media {
-            title {
-              userPreferred
+      MediaListCollection(userName: $name, type: ANIME, status: CURRENT, sort: UPDATED_TIME_DESC) {
+        lists {
+          entries {
+            progress
+            media {
+              title { userPreferred }
             }
           }
         }
@@ -45,31 +39,21 @@ async function fetchAniListData() {
     }
   `;
 
-  const userRes = await fetch("https://graphql.anilist.co", {
+  const res = await fetch("https://graphql.anilist.co", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ query, variables: { name: ANILIST_USERNAME } }),
   });
 
-  const { data: userData } = await userRes.json();
-  const user = userData.User;
-
-  const activityRes = await fetch("https://graphql.anilist.co", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ query: activityQuery, variables: { name: ANILIST_USERNAME } }),
-  });
-
-  const { data: activityData } = await activityRes.json();
-  const latestActivity = activityData.activities?.[0] ?? null;
-
-  return { user, latestActivity };
+  const { data } = await res.json();
+  return data;
 }
 
 async function updateWidget() {
   console.log("Fetching AniList data...");
-  const { user, latestActivity } = await fetchAniListData();
+  const data = await fetchAniListData();
 
+  const user = data.User;
   const stats = user.statistics.anime;
   const watching = stats.statuses.find(s => s.status === "CURRENT")?.count ?? 0;
   const daysWatched = (stats.minutesWatched / 1440).toFixed(1);
@@ -78,11 +62,13 @@ async function updateWidget() {
   });
 
   let activityText = "No recent activity";
-  if (latestActivity) {
-    const status = latestActivity.status.charAt(0).toUpperCase() + latestActivity.status.slice(1);
-    const progress = latestActivity.progress ? ` ${latestActivity.progress} of` : "";
-    const title = latestActivity.media.title.userPreferred;
-    activityText = `Latest Activity: ${status}${progress} ${title}`;
+  const lists = data.MediaListCollection?.lists ?? [];
+  const entries = lists.flatMap(l => l.entries);
+  if (entries.length > 0) {
+    const latest = entries[0];
+    const title = latest.media.title.userPreferred;
+    const ep = latest.progress;
+    activityText = `Watching ep ${ep} of ${title}`;
   }
 
   const body = {

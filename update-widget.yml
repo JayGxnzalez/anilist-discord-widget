@@ -1,0 +1,19 @@
+name: Update AniList Widget
+
+on:
+  schedule:
+    - cron: '0 * * * *'  # every hour
+  workflow_dispatch:      # allow manual trigger
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      - run: npm install
+      - run: node index.js
+        env:
+          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}

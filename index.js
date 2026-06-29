@@ -9,6 +9,7 @@ async function fetchAniListData() {
   const query = `
     query ($name: String) {
       User(name: $name) {
+        id
         name
         avatar { large }
         createdAt
@@ -28,19 +29,46 @@ async function fetchAniListData() {
     }
   `;
 
-  const res = await fetch("https://graphql.anilist.co", {
+  const activityQuery = `
+    query ($userId: Int) {
+      activities(userId: $userId, sort: ID_DESC, perPage: 1) {
+        ... on ListActivity {
+          status
+          progress
+          media {
+            title {
+              userPreferred
+            }
+          }
+        }
+      }
+    }
+  `;
+
+  const userRes = await fetch("https://graphql.anilist.co", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ query, variables: { name: ANILIST_USERNAME } }),
   });
 
-  const { data } = await res.json();
-  return data.User;
+  const { data: userData } = await userRes.json();
+  const user = userData.User;
+
+  const activityRes = await fetch("https://graphql.anilist.co", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ query: activityQuery, variables: { userId: user.id } }),
+  });
+
+  const { data: activityData } = await activityRes.json();
+  const latestActivity = activityData.activities[0];
+
+  return { user, latestActivity };
 }
 
 async function updateWidget() {
   console.log("Fetching AniList data...");
-  const user = await fetchAniListData();
+  const { user, latestActivity } = await fetchAniListData();
 
   const stats = user.statistics.anime;
   const watching = stats.statuses.find(s => s.status === "CURRENT")?.count ?? 0;
@@ -49,12 +77,21 @@ async function updateWidget() {
     month: "short", day: "numeric", year: "numeric"
   });
 
+  let activityText = "No recent activity";
+  if (latestActivity) {
+    const status = latestActivity.status.charAt(0).toUpperCase() + latestActivity.status.slice(1);
+    const progress = latestActivity.progress ? ` ${latestActivity.progress} of` : "";
+    const title = latestActivity.media.title.userPreferred;
+    activityText = `Latest Activity: ${status}${progress} ${title}`;
+  }
+
   const body = {
     username: user.name,
     data: {
       dynamic: [
         { type: 3, name: "avatar", value: { url: user.avatar.large } },
         { type: 1, name: "username", value: user.name },
+        { type: 1, name: "latest_activity", value: activityText },
         { type: 1, name: "total_anime", value: String(stats.count) },
         { type: 1, name: "days_watched", value: String(daysWatched) },
         { type: 1, name: "mean_score", value: Number(stats.meanScore).toFixed(1) },

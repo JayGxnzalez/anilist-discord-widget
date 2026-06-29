@@ -77,8 +77,8 @@ async function updateWidget() {
     }
   );
 
-  const result = await res.json();
-  console.log("Widget updated:", res.status, JSON.stringify(result));
+  const text = await res.text();
+  console.log("Widget updated:", res.status, text);
 }
 
 updateWidget();

@@ -26,10 +26,11 @@ async function fetchAniListData() {
           }
         }
       }
-      MediaListCollection(userName: $name, type: ANIME, status: CURRENT, sort: UPDATED_TIME_DESC) {
+      MediaListCollection(userName: $name, type: ANIME, sort: UPDATED_TIME_DESC) {
         lists {
           entries {
             progress
+            status
             media {
               title { userPreferred english }
             }
@@ -64,11 +65,32 @@ async function updateWidget() {
   let activityText = "No recent activity";
   const lists = data.MediaListCollection?.lists ?? [];
   const entries = lists.flatMap(l => l.entries);
+
+  // Sort all entries by most recently updated and grab the first
   if (entries.length > 0) {
     const latest = entries[0];
     const title = latest.media.title.english || latest.media.title.userPreferred;
     const ep = latest.progress;
-    activityText = `Watched ep ${ep} of ${title}`;
+
+    switch (latest.status) {
+      case "CURRENT":
+        activityText = `Watched ep ${ep} of ${title}`;
+        break;
+      case "COMPLETED":
+        activityText = `Completed ${title}`;
+        break;
+      case "PLANNING":
+        activityText = `Plans to watch ${title}`;
+        break;
+      case "DROPPED":
+        activityText = `Dropped ${title}`;
+        break;
+      case "PAUSED":
+        activityText = `Paused ${title} at ep ${ep}`;
+        break;
+      default:
+        activityText = `${title}`;
+    }
   }
 
   const body = {

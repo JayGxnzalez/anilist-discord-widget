@@ -30,8 +30,8 @@ async function fetchAniListData() {
   `;
 
   const activityQuery = `
-    query ($userId: Int) {
-      activities(userId: $userId, sort: ID_DESC, perPage: 1) {
+    query ($name: String) {
+      activities(userName: $name, sort: ID_DESC, perPage: 1) {
         ... on ListActivity {
           status
           progress
@@ -57,11 +57,11 @@ async function fetchAniListData() {
   const activityRes = await fetch("https://graphql.anilist.co", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ query: activityQuery, variables: { userId: user.id } }),
+    body: JSON.stringify({ query: activityQuery, variables: { name: ANILIST_USERNAME } }),
   });
 
   const { data: activityData } = await activityRes.json();
-  const latestActivity = activityData.activities[0];
+  const latestActivity = activityData.activities?.[0] ?? null;
 
   return { user, latestActivity };
 }

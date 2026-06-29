@@ -57,7 +57,7 @@ async function updateWidget() {
         { type: 1, name: "username", value: user.name },
         { type: 1, name: "total_anime", value: String(stats.count) },
         { type: 1, name: "days_watched", value: String(daysWatched) },
-        { type: 1, name: "mean_score", value: String(stats.meanScore) },
+        { type: 1, name: "mean_score", value: Number(stats.meanScore).toFixed(1) },
         { type: 1, name: "episodes_watched", value: String(stats.episodesWatched) },
         { type: 1, name: "currently_watching", value: String(watching) },
         { type: 1, name: "joined", value: joined },

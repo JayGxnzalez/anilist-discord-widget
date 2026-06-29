@@ -19,15 +19,12 @@ async function fetchAniListData() {
             episodesWatched
             minutesWatched
             meanScore
-            statuses(sort: COUNT_DESC) {
-              status
-              count
-            }
           }
         }
       }
       MediaListCollection(userName: $name, type: ANIME, sort: UPDATED_TIME_DESC) {
         lists {
+          status
           entries {
             progress
             status
@@ -56,19 +53,21 @@ async function updateWidget() {
 
   const user = data.User;
   const stats = user.statistics.anime;
-  const watching = stats.statuses.find(s => s.status === "CURRENT")?.count ?? 0;
   const daysWatched = (stats.minutesWatched / 1440).toFixed(1);
   const joined = new Date(user.createdAt * 1000).toLocaleDateString("en-US", {
     month: "short", day: "numeric", year: "numeric"
   });
 
-  let activityText = "No recent activity";
   const lists = data.MediaListCollection?.lists ?? [];
-  const entries = lists.flatMap(l => l.entries);
+  const allEntries = lists.flatMap(l => l.entries);
 
-  // Sort all entries by most recently updated and grab the first
-  if (entries.length > 0) {
-    const latest = entries[0];
+  // Count only CURRENT status entries directly from the list
+  const watching = allEntries.filter(e => e.status === "CURRENT").length;
+
+  // Latest activity from most recently updated entry
+  let activityText = "No recent activity";
+  if (allEntries.length > 0) {
+    const latest = allEntries[0];
     const title = latest.media.title.english || latest.media.title.userPreferred;
     const ep = latest.progress;
 
